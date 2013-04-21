@@ -1,0 +1,4 @@
+all:
+	gcc -O3 -g -o test test.c network.a -I./include -lpthread -lrt -ltcmalloc
+debug:
+	gcc -g -o test test.c network.a -I./include -lpthread -lrt -ltcmalloc
