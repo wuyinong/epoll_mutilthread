@@ -1,3 +1,4 @@
+int put_event2(engine_t e,st_io *io);
 void on_read_active(socket_t s)
 {
 	assert(s);
@@ -65,7 +66,7 @@ int _recv(socket_t s,st_io* io_req,int active_recv_count,int notify)
 		else if(bytes_transfer == 0)
 			bytes_transfer = -1;
 		if(notify == NOTIFY_ON_COMPLETE)
-			put_event(s->engine,io_req);	
+			put_event2(s->engine,io_req);	
 		return bytes_transfer;	
 	}	
 }
@@ -112,7 +113,7 @@ int _send(socket_t s,st_io* io_req,int active_send_count,int notify)
 		else if(bytes_transfer == 0)
 			bytes_transfer = -1;
 		if(notify == NOTIFY_ON_COMPLETE)
-			put_event(s->engine,io_req);	
+			put_event2(s->engine,io_req);	
 		return bytes_transfer;	
 	}
 }

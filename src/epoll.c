@@ -41,20 +41,13 @@ void epoll_loop(engine_t n)
 	uint32_t last_sync = tick;
 	while(n->status)
 	{
-		int nfds = TEMP_FAILURE_RETRY(epoll_wait(n->poller_fd,events,MAX_SOCKET,25));
+		int nfds = TEMP_FAILURE_RETRY(epoll_wait(n->poller_fd,events,MAX_SOCKET,10));
 		if(nfds < 0)
 		{
 			printf("error:%d\n",errno);
 			break;
 		}
 		int i;
-		uint32_t now = GetSystemMs();
-		if(now - last_sync > 50)
-		{
-			//每隔50ms执行一次强行同步,将local队列中的元素同步到share队列中
-			mq_flush(n->event_queue);
-			last_sync = now;
-		}
 		for(i = 0 ; i < nfds ; ++i)
 		{	
 			socket_t sock = (socket_t)events[i].data.ptr;
@@ -70,9 +63,8 @@ void epoll_loop(engine_t n)
 				}
 			}
 		}
-		
-		
-		now = GetSystemMs();
+		mq_flush(n->event_queue);
+		uint32_t now = GetSystemMs();
 		if(now - tick > 1000)
 		{
 			printf("recv:%dmb\n",total_bytes_recv/1024/1024);
