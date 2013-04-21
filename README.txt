@@ -1,2 +1,2 @@
-epoll实现的多线程网络编程接口，将原来的KendyNet-linux-mutithread-poll和 kendynet-mutilthread-complete-port和并到同一个项目。通过定义_POLL选择编译poll模式，如果不定义则编译为模拟windows IOCP
-模式.
+﻿epoll实现的多线程网络编程接口，将原来的KendyNet-linux-mutithread-poll和 kendynet-mutilthread-complete-port合并到同一个项目。
+
