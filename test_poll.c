@@ -7,6 +7,7 @@
 #include "atomic.h"
 #include "SysTime.h"
 #include "Connection.h"
+#include <assert.h>
 
 
 HANDLE engine;
@@ -14,8 +15,57 @@ const char *ip;
 long port;
 int total_bytes_recv = 0;
 
+
+#define MAX_CLIENT 2000
+static struct connection *clients[MAX_CLIENT];
+
+void init_clients()
+{
+	uint32_t i = 0;
+	for(; i < MAX_CLIENT;++i)
+		clients[i] = 0;
+}
+
+void add_client(struct connection *c)
+{
+	uint32_t i = 0;
+	for(; i < MAX_CLIENT; ++i)
+	{
+		if(clients[i] == 0)
+		{
+			clients[i] = c;
+			break;
+		}
+	}
+}
+
+void send2_all_client(rpacket_t r)
+{
+	uint32_t i = 0;
+	wpacket_t w;
+	for(; i < MAX_CLIENT; ++i)
+	{
+		if(clients[i])
+		{
+			w = wpacket_create_by_rpacket(NULL,r);
+			assert(w);
+			connection_send(clients[i],w,NULL);
+			//connection_push_packet(clients[i],w,NULL);
+		}
+	}
+}
+
 void remove_client(struct connection *c,int32_t reason)
 {
+	uint32_t i = 0;
+	for(; i < MAX_CLIENT; ++i)
+	{
+		if(clients[i] == c)
+		{
+			clients[i] = 0;
+			break;
+		}
+	}
 	HANDLE sock = c->socket;
 	if(0 == connection_destroy(&c))
 	{
@@ -25,8 +75,8 @@ void remove_client(struct connection *c,int32_t reason)
 
 void on_process_packet(struct connection *c,rpacket_t r)
 {
-	//send2_all_client(r);
-	//wpacket_t w = wpacket_create_by_rpacket(wpacket_allocator,r);
+	send2_all_client(r);
+	//wpacket_t w = wpacket_create_by_rpacket(NULL,r);
 	//connection_send(c,w,NULL);
 	//++send_request;
 
@@ -51,7 +101,7 @@ void *ListerRoutine(void *arg)
 			{
 				printf("a new client\n");
 				struct connection *c = connection_create(sock,0,MUTIL_THREAD,on_process_packet,remove_client);
-				//add_client(c);
+				add_client(c);
 				setNonblock(sock);
 				//发出第一个读请求
 				connection_start_recv(c);

@@ -267,7 +267,7 @@ void do_send(st_io *io)
 	for(;;)
 	{
 
-		int bytestransfer = WSASend(c->socket,&c->recv_overlap.m_super,RECV_NOW);
+		int bytestransfer = WSASend(c->socket,&c->send_overlap.m_super,RECV_NOW);
 		if(bytestransfer == 0)
 			return;
 		else if(bytestransfer < 0)
