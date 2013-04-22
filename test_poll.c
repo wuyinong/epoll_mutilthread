@@ -1,37 +1,39 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "common_define.h"
 #include "KendyNet.h"
 #include "thread.h"
 #include "SocketWrapper.h"
 #include "atomic.h"
 #include "SysTime.h"
-enum
-{
-	RECV= 0,
-	SEND,
-};
+#include "Connection.h"
 
-typedef struct IoContext
-{
-	st_io m_ioStruct;
-	unsigned char    m_opType;
-	void             *ud;
-}IoContext;
-
-typedef struct _Socket
-{
-	char send_buf[65536];
-	char recv_buf[65536];
-	struct iovec recv_iovec;
-	struct iovec send_iovec;
-	IoContext m_IORecvComp;
-    IoContext m_IOSendComp;
-	HANDLE    m_sock;
-}_Socket;
 
 HANDLE engine;
 const char *ip;
 long port;
+int total_bytes_recv = 0;
+
+void remove_client(struct connection *c,int32_t reason)
+{
+	HANDLE sock = c->socket;
+	if(0 == connection_destroy(&c))
+	{
+		ReleaseSocketWrapper(sock);
+	}
+}
+
+void on_process_packet(struct connection *c,rpacket_t r)
+{
+	//send2_all_client(r);
+	//wpacket_t w = wpacket_create_by_rpacket(wpacket_allocator,r);
+	//connection_send(c,w,NULL);
+	//++send_request;
+
+	total_bytes_recv += rpacket_len(r);
+	rpacket_destroy(&r);
+	//++packet_recv;
+}
 
 void *ListerRoutine(void *arg)
 {
@@ -40,7 +42,7 @@ void *ListerRoutine(void *arg)
 	HANDLE listerfd;
 	if((listerfd = Tcp_Listen(ip,port,&servaddr,5)) >= 0)
 	{
-		while(/*!is_terminate(thread)*/1)
+		while(1)
 		{
 			struct sockaddr_in sa;
 			socklen_t salen = sizeof(sa);
@@ -48,30 +50,12 @@ void *ListerRoutine(void *arg)
 			if(sock >= 0)
 			{
 				printf("a new client\n");
+				struct connection *c = connection_create(sock,0,MUTIL_THREAD,on_process_packet,remove_client);
+				//add_client(c);
 				setNonblock(sock);
-				_Socket *_sock = malloc(sizeof(*_sock));
-				_sock->m_sock = sock;
-				_sock->m_IORecvComp.m_opType = RECV;
-				_sock->m_IOSendComp.m_opType = SEND;
-				_sock->m_IORecvComp.ud = _sock->m_IOSendComp.ud = _sock;
-				_sock->recv_iovec.iov_base = _sock->recv_buf;
-				_sock->send_iovec.iov_base = _sock->send_buf;
-				_sock->m_IORecvComp.m_ioStruct.iovec = &_sock->recv_iovec;
-				_sock->m_IOSendComp.m_ioStruct.iovec = &_sock->send_iovec;
-				_sock->m_IOSendComp.m_ioStruct.iovec_count = _sock->m_IORecvComp.m_ioStruct.iovec_count = 1;
-				//printf("接到一个连接\n");
-				if(0 != Bind2Engine(engine,sock))
-				{
-					printf("bind出错\n");
-					CloseSocket(sock);
-					free(_sock);
-				}
-				else
-				{
-					//发起第一个读请求
-					_sock->m_IORecvComp.m_ioStruct.iovec->iov_len = 65536;
-					WSARecv(sock,(st_io*)&(_sock->m_IORecvComp),RECV_POST);
-				}
+				//发出第一个读请求
+				connection_start_recv(c);
+				Bind2Engine(engine,sock);
 			}
 			else
 			{
@@ -82,31 +66,6 @@ void *ListerRoutine(void *arg)
 	}
 	return 0;
 }
-
-#define SEND while(byteTransfer > 0)\
-{\
-	sock->m_IOSendComp.m_ioStruct.iovec->iov_len = byteTransfer;\
-	int ret = WSASend(sock->m_sock,(st_io*)&(sock->m_IOSendComp),SEND_NOW);\
-	if(ret > 0)\
-	{\
-		byteTransfer -= ret;\
-		if(byteTransfer == 0)\
-			break;\
-		sock->m_IOSendComp.m_ioStruct.iovec->iov_len = byteTransfer;\
-	}else if(ret == 0)\
-	{\
-		byteTransfer = 0;\
-		break;\
-	}\
-	else\
-	{\
-		byteTransfer = -1;\
-		break;\
-	}\
-}
-
-int total_bytes_recv = 0;
-
 
 void *IORoutine(void *arg)
 {
@@ -122,34 +81,23 @@ void *IORoutine(void *arg)
 		if(ioComp)
 		{
 
-			IoContext *context = (IoContext*)ioComp;
-			_Socket *sock = (_Socket*)context->ud;
-			if(context->m_opType == RECV)
+			struct OVERLAPCONTEXT *_CONTEXT = (struct OVERLAPCONTEXT *)ioComp;
+			struct connection *c = _CONTEXT->c;
+			if(_CONTEXT == &c->recv_overlap)
+				do_recv((st_io*)_CONTEXT);
+			else if(_CONTEXT == &c->send_overlap)
+				do_send((st_io*)_CONTEXT);
+			else
 			{
-				int byteTransfer = 0;
-				while((byteTransfer = WSARecv(sock->m_sock,(st_io*)context,RECV_NOW)) > 0)
-				{
-					total_bytes_recv += byteTransfer;
-					//memcpy(sock->send_buf,sock->recv_buf,byteTransfer);
-					//SEND;
-				}
-
-				if(byteTransfer < 0)
-				{
-					if(CloseSocket(sock->m_sock) == 0)
-						free(sock);
-				}
+				printf("error\n");
 			}
-			/*else
-			{	
-				int byteTransfer = sock->m_IOSendComp.m_ioStruct.iovec->iov_len;
-				SEND;
-			}*/
 		}
 	}
 	printf("IO end\n");
 	return 0;
 }
+
+
 void *EngineRoutine(void *arg)
 {
 	EngineRun(engine);
