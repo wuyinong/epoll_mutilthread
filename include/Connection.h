@@ -70,8 +70,8 @@ int32_t connection_start_recv(struct connection*);
 //void SendFinish(int32_t bytetransfer,st_io *io);
 //void RecvFinish(int32_t bytetransfer,st_io *io);
 
-void do_recv(st_io *io);
-void do_send(st_io *io);
+void do_recv(struct connection *c);
+void do_send(struct connection *c);
 
 
 #endif

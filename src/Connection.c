@@ -87,10 +87,8 @@ static inline void unpack(struct connection *c)
 	//return r;
 }
 
-void do_recv(st_io *io)
+void do_recv(struct connection *c)
 {
-	struct OVERLAPCONTEXT *OVERLAP = (struct OVERLAPCONTEXT *)io;
-	struct connection *c = OVERLAP->c;
 	rpacket_t r;
 	uint32_t recv_size;
 	uint32_t free_buffer_size;
@@ -260,10 +258,8 @@ void connection_push_packet(struct connection *c,wpacket_t w,packet_send_finish 
 	}
 }
 
-void do_send(st_io *io)
+void do_send(struct connection *c)
 {
-	struct OVERLAPCONTEXT *OVERLAP = (struct OVERLAPCONTEXT *)io;
-	struct connection *c = OVERLAP->c;
 	for(;;)
 	{
 
@@ -284,8 +280,7 @@ void do_send(st_io *io)
 		else
 		{
 			update_send_list(c,bytestransfer);
-			io = prepare_send(c);
-			if(!io)
+			if(!prepare_send(c))
 			{
 				//没有数据需要发送了
 				c->send_overlap.isUsed = 0;

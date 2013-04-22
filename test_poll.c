@@ -134,9 +134,9 @@ void *IORoutine(void *arg)
 			struct OVERLAPCONTEXT *_CONTEXT = (struct OVERLAPCONTEXT *)ioComp;
 			struct connection *c = _CONTEXT->c;
 			if(_CONTEXT == &c->recv_overlap)
-				do_recv((st_io*)_CONTEXT);
+				do_recv(c);
 			else if(_CONTEXT == &c->send_overlap)
-				do_send((st_io*)_CONTEXT);
+				do_send(c);
 			else
 			{
 				printf("error\n");
