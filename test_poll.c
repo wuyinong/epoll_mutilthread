@@ -170,13 +170,9 @@ int main(int argc,char **argv)
 	thread_t listener = create_thread(0);
 	start_run(listener,ListerRoutine,listener);
 	
-	int complete_count = atoi(argv[3]);
-	int i = 0;
-	for( ; i < complete_count; ++i)
-	{
-		thread_t complete_t = create_thread(0);
-		start_run(complete_t,IORoutine,0);
-	}
+	thread_t complete_t = create_thread(0);
+	start_run(complete_t,IORoutine,0);
+
 	thread_t engine_thread = create_thread(1);
 	start_run(engine_thread,EngineRoutine,0);
 	getchar();
