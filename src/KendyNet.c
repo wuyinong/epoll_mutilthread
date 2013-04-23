@@ -7,7 +7,7 @@
 
 int InitNetSystem()
 {
-	return InitHandleMgr();
+	return 0;
 }
 
 int EngineRun(HANDLE engine)

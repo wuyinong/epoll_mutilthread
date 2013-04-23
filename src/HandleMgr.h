@@ -14,11 +14,15 @@
 #define MAX_ENGINE 1
 #define MAX_SOCKET 4096
 
+inline socket_t GetSocketByHandle(HANDLE handle)
+{
+	return (socket_t)handle;
+}
 
-extern int     InitHandleMgr();
-
-inline extern socket_t GetSocketByHandle(HANDLE);
-inline extern engine_t GetEngineByHandle(HANDLE);
+inline engine_t GetEngineByHandle(HANDLE handle)
+{
+	return (engine_t)handle;
+}
 
 extern HANDLE   NewEngine();
 extern void     ReleaseEngine(HANDLE);
