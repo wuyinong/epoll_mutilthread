@@ -28,7 +28,7 @@ HANDLE CreateEngine()
 		if(0 != e->Init(e))
 		{
 			CloseEngine(engine);
-			engine = -1;
+			engine = NULL;
 		}
 	}
 	return engine;
@@ -51,6 +51,13 @@ int Bind2Engine(HANDLE e,HANDLE s)
 		return 0;
 	}
 	return -1;
+}
+
+void StopEngine(HANDLE e)
+{
+	engine_t engine = GetEngineByHandle(e);
+	if(engine)
+		stop_engine(engine);
 }
 
 int	GetQueueEvent(HANDLE handle,st_io **io ,int timeout)

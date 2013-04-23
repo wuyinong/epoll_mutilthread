@@ -1,6 +1,6 @@
 #include "HandleMgr.h"
 #include "sync.h"
-
+#include "mq.h"
 static mutex_t  engine_mtx;
 static engine_t engine_pool[MAX_ENGINE];
 static int current_engine_count = 0;
@@ -19,46 +19,17 @@ int InitHandleMgr()
 
 inline socket_t GetSocketByHandle(HANDLE handle)
 {
-	if(handle >= 0 && handle < current_socket_count && socket_pool[handle]->status != 0)
-		return socket_pool[handle];
-	return 0;
+	return (socket_t)handle;
 }
 
 inline engine_t GetEngineByHandle(HANDLE handle)
 {
-	if(handle >= 0 && handle < current_engine_count && engine_pool[handle]->status != 0)
-		return engine_pool[handle];
-	return 0;	
+	return (engine_t)handle;
 }
 
 HANDLE	NewSocketWrapper()
 {
-	mutex_lock(socket_mtx);
-	int i = 0;
-	int cur_socket_count = current_socket_count;
-	//首先查看已创建的socket中是否有可用的
-	for( ; i < current_socket_count; ++i)
-	{
-		if(socket_pool[i]->status == 0)
-		{
-			socket_pool[i]->status = 1;
-			break;
-		}
-	}
-	if(i == current_socket_count && current_socket_count < MAX_SOCKET)
-	{
-		//还没到达上限,新产生一个socket
-		socket_pool[current_socket_count] = create_socket();
-		if(socket_pool[current_socket_count])
-		{
-			socket_pool[current_socket_count]->status = 1;
-			cur_socket_count = ++current_socket_count;
-		}
-	}
-	mutex_unlock(socket_mtx);
-	if(i < cur_socket_count)
-		return i;
-	return -1;
+	return (HANDLE)create_socket();
 }
 
 
@@ -70,62 +41,19 @@ inline static int RemoveBinding(engine_t e, socket_t sock)
 
 int  ReleaseSocketWrapper(HANDLE handle)
 {
-	int ret = -1;
-	mutex_lock(socket_mtx);
-	if(handle >= 0 && handle < current_socket_count)
-	{
-		spin_lock(socket_pool[handle]->mtx);
-		if(socket_pool[handle]->status != 0)
-		{
-			RemoveBinding(socket_pool[handle]->engine,socket_pool[handle]);
-			close(socket_pool[handle]->fd);
-			socket_pool[handle]->status = 0;
-			ret = 0;			
-		}
-		spin_unlock(socket_pool[handle]->mtx);	
-	}
-	mutex_unlock(socket_mtx);
-	return ret;
+	socket_t s = (socket_t)handle;
+	RemoveBinding(s->engine,s);
+	close(s->fd);
+	free_socket(&s);
 } 
 
 HANDLE	NewEngine()
 {
-	mutex_lock(engine_mtx);
-	int i = 0;
-	int cur_engine_count = current_engine_count;
-	for( ; i < current_engine_count; ++i)
-	{
-		if(engine_pool[i]->status == 0)
-		{
-			engine_pool[i]->status = 1;
-			break;
-		}
-	}
-	
-	if(i == current_engine_count && current_engine_count < MAX_ENGINE)
-	{
-		//还没到达上限,新产生一个engine
-		engine_pool[current_engine_count] = create_engine();
-		if(engine_pool[current_engine_count])
-		{
-			engine_pool[current_engine_count]->status = 1;
-			cur_engine_count = ++current_engine_count;
-		}
-	}
-    	
-	mutex_unlock(engine_mtx);
-	
-	if(i < cur_engine_count)
-		return i;
-	return -1;
+	return (HANDLE)create_engine();
 }
 
 void  ReleaseEngine(HANDLE handle)
 {
-	mutex_lock(engine_mtx);
-	if(handle >= 0 && handle < current_engine_count && engine_pool[handle]->status != 0)
-	{
-		stop_engine(engine_pool[handle]);
-	}
-	mutex_unlock(engine_mtx);
+	engine_t e = (engine_t)handle;
+	free_engine(&e);
 } 

@@ -97,7 +97,7 @@ void *ListerRoutine(void *arg)
 			struct sockaddr_in sa;
 			socklen_t salen = sizeof(sa);
 			HANDLE sock = Accept(listerfd,(struct sockaddr*)&sa,&salen);
-			if(sock >= 0)
+			if(sock)
 			{
 				printf("a new client\n");
 				struct connection *c = connection_create(sock,0,MUTIL_THREAD,on_process_packet,remove_client);
@@ -125,7 +125,7 @@ void *IORoutine(void *arg)
 		ioComp = 0;
 		if(0 > GetQueueEvent(engine,&ioComp,INFINITE))
 		{
-			printf("poller÷’÷π\n");
+			printf("poller stop\n");
 			break;
 		}
 		if(ioComp)

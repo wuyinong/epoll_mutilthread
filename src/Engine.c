@@ -11,7 +11,7 @@ engine_t create_engine()
 	if(e)
 	{
 		e->mtx = spin_create();//mutex_create();
-		e->status = 0;
+		e->status = 1;
 		e->event_queue = create_mq(1024,NULL);
 		e->Init = epoll_init;
 		e->Loop = epoll_loop;

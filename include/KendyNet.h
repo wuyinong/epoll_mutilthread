@@ -37,12 +37,13 @@ typedef struct
 //³õÊŒ»¯ÍøÂçÏµÍ³
 int      InitNetSystem();
 
-typedef int HANDLE;
+typedef  void* HANDLE;
 HANDLE   CreateEngine();
 void     CloseEngine(HANDLE);
 int      EngineRun(HANDLE);
+void     StopEngine(HANDLE);
 
-int     Bind2Engine(HANDLE,HANDLE);
+int      Bind2Engine(HANDLE,HANDLE);
 
 
 enum

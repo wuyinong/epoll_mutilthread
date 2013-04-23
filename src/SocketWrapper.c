@@ -18,13 +18,13 @@ HANDLE OpenSocket(int family,int type,int protocol)
 	int sockfd; 
 	if( (sockfd = socket(family,type,protocol)) < 0)
 	{
-		return -1;
+		return NULL;
 	}
 	HANDLE sock = NewSocketWrapper();
 	if(sock < 0)
 	{
 		close(sockfd);
-		return -1;
+		return NULL;
 	}
 	InitSocket(sock,sockfd);
 	return sock;
@@ -51,10 +51,10 @@ int Connect(HANDLE sock,const struct sockaddr *servaddr,socklen_t addrlen)
 
 }
 
-int Tcp_Connect(const char *ip,unsigned short port,struct sockaddr_in *servaddr,int retry)
+HANDLE Tcp_Connect(const char *ip,unsigned short port,struct sockaddr_in *servaddr,int retry)
 {
 	if(!ip)
-		return -1;
+		return NULL;
 
 	bzero(servaddr,sizeof(*servaddr));
 	servaddr->sin_family = INET;
@@ -63,7 +63,7 @@ int Tcp_Connect(const char *ip,unsigned short port,struct sockaddr_in *servaddr,
 	{
 
 		printf("%s\n",strerror(errno));
-		return -1;
+		return NULL;
 	}
 	
 	HANDLE sock = OpenSocket(INET,STREAM,TCP);
@@ -78,7 +78,7 @@ int Tcp_Connect(const char *ip,unsigned short port,struct sockaddr_in *servaddr,
 		}
 		CloseSocket(sock);
 	}
-	return -1;
+	return NULL;
 }
 
 int Bind(HANDLE sock,const struct sockaddr *myaddr,socklen_t addrlen)
@@ -117,7 +117,7 @@ HANDLE Tcp_Listen(const char *ip,unsigned short port,struct sockaddr_in *servadd
 	HANDLE sock;
 	sock = OpenSocket(INET,STREAM,TCP);
 	if(sock < 0)
-		return -1;
+		return NULL;
 
 	bzero(servaddr,sizeof(*servaddr));
 	servaddr->sin_family = INET;
@@ -127,7 +127,7 @@ HANDLE Tcp_Listen(const char *ip,unsigned short port,struct sockaddr_in *servadd
 		{
 
 			printf("%s\n",strerror(errno));
-			return -1;
+			return NULL;
 		}
 	}
 	else
@@ -137,7 +137,7 @@ HANDLE Tcp_Listen(const char *ip,unsigned short port,struct sockaddr_in *servadd
 	if(Bind(sock,(struct sockaddr*)servaddr,sizeof(*servaddr)) < 0)
 	{
 		CloseSocket(sock);
-		return -1;
+		return NULL;
 	}
 
 	if(Listen(sock,backlog) == 0) 
@@ -145,7 +145,7 @@ HANDLE Tcp_Listen(const char *ip,unsigned short port,struct sockaddr_in *servadd
 	else
 	{
 		CloseSocket(sock);
-		return -1;
+		return NULL;
 	}
 }
 
@@ -167,19 +167,19 @@ HANDLE Accept(HANDLE sock,struct sockaddr *sa,socklen_t *salen)
 			else
 			{
 				printf("%s\n",strerror(errno));
-				return -1;
+				return NULL;
 			}
 		}
 		HANDLE newsock = NewSocketWrapper();
 		if(newsock < 0)
 		{
 			close(n);
-			return -1;
+			return NULL;
 		}
 		InitSocket(newsock,n);		
 		return newsock;
 	}
-	return -1;
+	return NULL;
 }
 
 int getLocalAddrPort(HANDLE sock,struct sockaddr_in *remoAddr,socklen_t *len,char *buf,unsigned short *port)
