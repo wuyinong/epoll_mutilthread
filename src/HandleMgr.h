@@ -14,12 +14,12 @@
 #define MAX_ENGINE 1
 #define MAX_SOCKET 4096
 
-inline socket_t GetSocketByHandle(HANDLE handle)
+static inline socket_t GetSocketByHandle(HANDLE handle)
 {
 	return (socket_t)handle;
 }
 
-inline engine_t GetEngineByHandle(HANDLE handle)
+static inline engine_t GetEngineByHandle(HANDLE handle)
 {
 	return (engine_t)handle;
 }
